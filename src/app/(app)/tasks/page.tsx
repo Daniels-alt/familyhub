@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import TaskList from "@/components/TaskList";
 import { ClipboardList } from "lucide-react";
+import { FamilyMember } from "@/lib/types";
 
 export default async function TasksPage() {
   const supabase = await createClient();
@@ -13,7 +14,7 @@ export default async function TasksPage() {
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("family_id")
+    .select("family_id, role")
     .eq("id", user.id)
     .single();
 
@@ -25,11 +26,30 @@ export default async function TasksPage() {
     );
   }
 
-  const { data: tasks } = await supabase
-    .from("tasks")
-    .select("*")
-    .eq("family_id", profile.family_id)
-    .order("due_date", { ascending: true, nullsFirst: false });
+  const familyId = profile.family_id;
+
+  // Fetch tasks, members, and permissions in parallel
+  const [tasksResult, membersResult, familyResult] = await Promise.all([
+    supabase
+      .from("tasks")
+      .select("*")
+      .eq("family_id", familyId)
+      .order("due_date", { ascending: true, nullsFirst: false }),
+    supabase
+      .from("profiles")
+      .select("id, full_name, role")
+      .eq("family_id", familyId)
+      .order("full_name", { ascending: true }),
+    supabase
+      .from("families")
+      .select("children_can_add_exams, children_can_add_tasks")
+      .eq("id", familyId)
+      .single(),
+  ]);
+
+  const members = (membersResult.data as FamilyMember[]) ?? [];
+  const canAddExams = familyResult.data?.children_can_add_exams ?? true;
+  const canAddTasks = familyResult.data?.children_can_add_tasks ?? true;
 
   return (
     <div className="p-4 space-y-4 max-w-lg mx-auto">
@@ -44,8 +64,12 @@ export default async function TasksPage() {
       </div>
 
       <TaskList
-        initialTasks={tasks ?? []}
-        familyId={profile.family_id}
+        initialTasks={tasksResult.data ?? []}
+        familyId={familyId}
+        familyMembers={members}
+        userRole={profile.role as "parent" | "child"}
+        canAddExams={canAddExams}
+        canAddTasks={canAddTasks}
       />
     </div>
   );

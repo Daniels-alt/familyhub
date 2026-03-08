@@ -2,6 +2,10 @@ export interface Family {
   id: string;
   family_name: string;
   invite_code: string;
+  child_invite_code: string;
+  children_can_add_exams: boolean;
+  children_can_add_tasks: boolean;
+  children_can_manage_shopping: boolean;
   created_at: string;
 }
 
@@ -9,6 +13,7 @@ export interface Profile {
   id: string;
   family_id: string | null;
   full_name: string;
+  role: "parent" | "child";
   created_at: string;
 }
 
@@ -30,15 +35,20 @@ export interface Task {
   due_date: string | null;
   status: "todo" | "done";
   type: "exam" | "chore";
+  assigned_to: string | null;
+  recurrence: "none" | "daily" | "weekly" | "monthly";
+  recurrence_end_date: string | null;
   created_at: string;
 }
+
+export type FamilyMember = Pick<Profile, "id" | "full_name" | "role">;
 
 export type Database = {
   public: {
     Tables: {
       families: {
         Row: Family;
-        Insert: Omit<Family, "id" | "created_at">;
+        Insert: Omit<Family, "id" | "created_at" | "invite_code" | "child_invite_code">;
         Update: Partial<Omit<Family, "id" | "created_at">>;
       };
       profiles: {

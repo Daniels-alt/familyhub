@@ -44,39 +44,41 @@ export default async function DashboardPage() {
   const familyName =
     (profile.families as { family_name: string } | null)?.family_name ?? "המשפחה";
 
-  // Fetch missing shopping items count
-  const { count: missingCount } = await supabase
-    .from("shopping_list")
-    .select("*", { count: "exact", head: true })
-    .eq("family_id", familyId)
-    .eq("is_bought", false);
-
-  // Fetch upcoming tasks (next 14 days, todo)
   const today = new Date().toISOString().split("T")[0];
   const in14Days = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000)
     .toISOString()
     .split("T")[0];
 
-  const { data: upcomingTasks } = await supabase
-    .from("tasks")
-    .select("*")
-    .eq("family_id", familyId)
-    .eq("status", "todo")
-    .gte("due_date", today)
-    .lte("due_date", in14Days)
-    .order("due_date", { ascending: true })
-    .limit(5);
-
-  // Fetch upcoming exams specifically
-  const { data: upcomingExams } = await supabase
-    .from("tasks")
-    .select("*")
-    .eq("family_id", familyId)
-    .eq("type", "exam")
-    .eq("status", "todo")
-    .gte("due_date", today)
-    .order("due_date", { ascending: true })
-    .limit(3);
+  // Fetch all dashboard data in parallel
+  const [
+    { count: missingCount },
+    { data: upcomingTasks },
+    { data: upcomingExams },
+  ] = await Promise.all([
+    supabase
+      .from("shopping_list")
+      .select("*", { count: "exact", head: true })
+      .eq("family_id", familyId)
+      .eq("is_bought", false),
+    supabase
+      .from("tasks")
+      .select("*")
+      .eq("family_id", familyId)
+      .eq("status", "todo")
+      .gte("due_date", today)
+      .lte("due_date", in14Days)
+      .order("due_date", { ascending: true })
+      .limit(5),
+    supabase
+      .from("tasks")
+      .select("*")
+      .eq("family_id", familyId)
+      .eq("type", "exam")
+      .eq("status", "todo")
+      .gte("due_date", today)
+      .order("due_date", { ascending: true })
+      .limit(3),
+  ]);
 
   function formatDate(dateStr: string) {
     const date = new Date(dateStr);
