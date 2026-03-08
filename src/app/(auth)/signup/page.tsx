@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Home, UserPlus } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
@@ -13,7 +12,6 @@ import { Label } from "@/components/ui/label";
 type Mode = "create" | "join";
 
 export default function SignupPage() {
-  const router = useRouter();
   const [mode, setMode] = useState<Mode>("create");
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
