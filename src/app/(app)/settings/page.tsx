@@ -7,6 +7,7 @@ import CopyInviteButton from "@/components/CopyInviteButton";
 import LogoutButton from "@/components/LogoutButton";
 import FamilySetup from "@/components/FamilySetup";
 import ChildPermissions from "@/components/ChildPermissions";
+import EditFamilyName from "@/components/EditFamilyName";
 import { FamilyMember } from "@/lib/types";
 
 export default async function SettingsPage() {
@@ -104,7 +105,14 @@ export default async function SettingsPage() {
             <CardContent>
               <div className="flex justify-between items-center py-2">
                 <span className="text-sm text-gray-500">שם המשפחה</span>
-                <span className="text-sm font-medium">{family.family_name}</span>
+                {isParent && profile?.family_id ? (
+                  <EditFamilyName
+                    familyId={profile.family_id}
+                    currentName={family.family_name}
+                  />
+                ) : (
+                  <span className="text-sm font-medium">{family.family_name}</span>
+                )}
               </div>
             </CardContent>
           </Card>
