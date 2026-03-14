@@ -36,6 +36,7 @@ export interface Task {
   status: "todo" | "done";
   type: "exam" | "chore";
   assigned_to: string | null;
+  created_by: string | null;
   recurrence: "none" | "daily" | "weekly" | "monthly";
   recurrence_end_date: string | null;
   created_at: string;

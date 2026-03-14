@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Trash2, ClipboardList, BookOpen, ListTodo, User, RefreshCw } from "lucide-react";
+import { Plus, Trash2, ClipboardList, BookOpen, ListTodo, User, RefreshCw, PenLine } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 type FilterType = "all" | "exam" | "chore";
@@ -24,6 +24,7 @@ const RECURRENCE_LABELS: Record<Task["recurrence"], string> = {
 interface TaskListProps {
   initialTasks: Task[];
   familyId: string;
+  currentUserId: string;
   familyMembers: FamilyMember[];
   userRole: "parent" | "child";
   canAddExams: boolean;
@@ -41,6 +42,7 @@ function addRecurrence(dateStr: string, recurrence: Task["recurrence"]): string 
 export default function TaskList({
   initialTasks,
   familyId,
+  currentUserId,
   familyMembers,
   userRole,
   canAddExams,
@@ -48,6 +50,7 @@ export default function TaskList({
 }: TaskListProps) {
   const [tasks, setTasks] = useState<Task[]>(initialTasks);
   const [filter, setFilter] = useState<FilterType>("all");
+  const [filterMember, setFilterMember] = useState<string>("all");
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [dueDate, setDueDate] = useState("");
@@ -59,9 +62,16 @@ export default function TaskList({
   const [isPending, startTransition] = useTransition();
   const supabase = createClient();
 
-  const filteredTasks = tasks.filter((t) =>
-    filter === "all" ? true : t.type === filter
-  );
+  // Combined filter: type + member
+  const filteredTasks = tasks.filter((t) => {
+    const typeMatch = filter === "all" || t.type === filter;
+    const memberMatch =
+      filterMember === "all" ||
+      t.assigned_to === filterMember ||
+      t.created_by === filterMember;
+    return typeMatch && memberMatch;
+  });
+
   const pendingTasks = filteredTasks.filter((t) => t.status === "todo");
   const doneTasks = filteredTasks.filter((t) => t.status === "done");
 
@@ -105,6 +115,7 @@ export default function TaskList({
       status: "todo",
       type,
       assigned_to: assignedTo || null,
+      created_by: currentUserId,
       recurrence,
       recurrence_end_date: recurrenceEndDate || null,
       created_at: new Date().toISOString(),
@@ -130,6 +141,7 @@ export default function TaskList({
           status: "todo",
           type,
           assigned_to: newTask.assigned_to,
+          created_by: currentUserId,
           recurrence: newTask.recurrence,
           recurrence_end_date: newTask.recurrence_end_date,
         })
@@ -171,6 +183,7 @@ export default function TaskList({
               status: "todo",
               type: task.type,
               assigned_to: task.assigned_to,
+              created_by: task.created_by,
               recurrence: task.recurrence,
               recurrence_end_date: task.recurrence_end_date,
             })
@@ -201,6 +214,10 @@ export default function TaskList({
   function TaskCard({ task }: { task: Task }) {
     const isDone = task.status === "done";
     const assignee = memberName(task.assigned_to);
+    const creator = memberName(task.created_by);
+    // Show "created by" only when it adds information (creator ≠ assignee or no assignee)
+    const showCreator = creator && task.created_by !== task.assigned_to;
+
     return (
       <div
         className={cn(
@@ -240,7 +257,7 @@ export default function TaskList({
               </p>
             )}
             {assignee && (
-              <span className="text-xs text-gray-400 flex items-center gap-0.5">
+              <span className="text-xs text-gray-500 flex items-center gap-0.5">
                 <User className="h-3 w-3" />
                 {assignee}
               </span>
@@ -249,6 +266,13 @@ export default function TaskList({
               <span className="text-xs text-purple-500 flex items-center gap-0.5">
                 <RefreshCw className="h-3 w-3" />
                 {RECURRENCE_LABELS[task.recurrence]}
+              </span>
+            )}
+            {/* "Created by" label */}
+            {showCreator && (
+              <span className="text-xs text-gray-400 flex items-center gap-0.5">
+                <PenLine className="h-3 w-3" />
+                נוצר ע&quot;י {creator}
               </span>
             )}
           </div>
@@ -279,7 +303,7 @@ export default function TaskList({
 
   return (
     <div className="space-y-4">
-      {/* Filter tabs */}
+      {/* Type filter tabs */}
       <div className="flex gap-2 bg-gray-100 p-1 rounded-lg">
         {filterButtons.map(({ value, label, icon }) => (
           <button
@@ -297,6 +321,53 @@ export default function TaskList({
           </button>
         ))}
       </div>
+
+      {/* Member filter — only shown when family has multiple members */}
+      {familyMembers.length > 1 && (
+        <div className="flex items-center gap-2">
+          <User className="h-4 w-4 text-gray-400 shrink-0" />
+          <select
+            value={filterMember}
+            onChange={(e) => setFilterMember(e.target.value)}
+            className="flex-1 h-9 rounded-md border border-input bg-background px-3 py-1 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          >
+            <option value="all">כל בני המשפחה</option>
+            {familyMembers.map((m) => (
+              <option key={m.id} value={m.id}>
+                {m.full_name} ({m.role === "parent" ? "הורה" : "ילד"})
+              </option>
+            ))}
+          </select>
+          {filterMember !== "all" && (
+            <button
+              onClick={() => setFilterMember("all")}
+              className="text-xs text-blue-500 hover:underline shrink-0"
+            >
+              נקה
+            </button>
+          )}
+        </div>
+      )}
+
+      {/* Active filter summary */}
+      {(filter !== "all" || filterMember !== "all") && (
+        <div className="flex items-center gap-2 flex-wrap">
+          <span className="text-xs text-gray-400">מסנן:</span>
+          {filter !== "all" && (
+            <Badge variant="outline" className="text-xs py-0 gap-1">
+              {filter === "exam" ? "בחינות" : "מטלות"}
+              <button onClick={() => setFilter("all")} className="hover:text-red-500 mr-1">×</button>
+            </Badge>
+          )}
+          {filterMember !== "all" && (
+            <Badge variant="outline" className="text-xs py-0 gap-1">
+              <User className="h-3 w-3" />
+              {memberName(filterMember)}
+              <button onClick={() => setFilterMember("all")} className="hover:text-red-500 mr-1">×</button>
+            </Badge>
+          )}
+        </div>
+      )}
 
       {/* Add Task Button */}
       {showAddButton && (
@@ -456,6 +527,9 @@ export default function TaskList({
           <CardContent className="p-8 text-center text-gray-500">
             <ClipboardList className="h-10 w-10 mx-auto mb-3 text-gray-300" />
             <p>אין משימות ממתינות</p>
+            {(filter !== "all" || filterMember !== "all") && (
+              <p className="text-xs text-gray-400 mt-1">נסה לשנות את הסינון</p>
+            )}
           </CardContent>
         </Card>
       )}

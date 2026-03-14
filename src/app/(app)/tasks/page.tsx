@@ -66,6 +66,7 @@ export default async function TasksPage() {
       <TaskList
         initialTasks={tasksResult.data ?? []}
         familyId={familyId}
+        currentUserId={user.id}
         familyMembers={members}
         userRole={profile.role as "parent" | "child"}
         canAddExams={canAddExams}
