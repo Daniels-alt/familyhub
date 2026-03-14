@@ -19,10 +19,7 @@ export default function RemoveMemberButton({ memberId, memberName }: RemoveMembe
     if (!confirm(`האם להסיר את ${memberName} מהמשפחה?`)) return;
 
     startTransition(async () => {
-      await supabase
-        .from("profiles")
-        .update({ family_id: null, role: "parent" })
-        .eq("id", memberId);
+      await supabase.rpc("remove_family_member", { p_member_id: memberId });
       router.refresh();
     });
   }
