@@ -8,6 +8,7 @@ import LogoutButton from "@/components/LogoutButton";
 import FamilySetup from "@/components/FamilySetup";
 import ChildPermissions from "@/components/ChildPermissions";
 import EditFamilyName from "@/components/EditFamilyName";
+import RemoveMemberButton from "@/components/RemoveMemberButton";
 import { FamilyMember } from "@/lib/types";
 
 export default async function SettingsPage() {
@@ -168,16 +169,24 @@ export default async function SettingsPage() {
                     className="flex items-center justify-between py-2 border-b last:border-0"
                   >
                     <span className="text-sm font-medium">{member.full_name}</span>
-                    <Badge
-                      variant="outline"
-                      className={
-                        member.role === "parent"
-                          ? "border-blue-300 text-blue-600"
-                          : "border-green-300 text-green-600"
-                      }
-                    >
-                      {member.role === "parent" ? "הורה" : "ילד"}
-                    </Badge>
+                    <div className="flex items-center gap-2">
+                      <Badge
+                        variant="outline"
+                        className={
+                          member.role === "parent"
+                            ? "border-blue-300 text-blue-600"
+                            : "border-green-300 text-green-600"
+                        }
+                      >
+                        {member.role === "parent" ? "הורה" : "ילד"}
+                      </Badge>
+                      {isParent && member.id !== user.id && (
+                        <RemoveMemberButton
+                          memberId={member.id}
+                          memberName={member.full_name}
+                        />
+                      )}
+                    </div>
                   </div>
                 ))}
               </CardContent>
