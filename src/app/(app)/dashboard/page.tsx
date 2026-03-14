@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { ShoppingCart, BookOpen, ClipboardList, AlertCircle } from "lucide-react";
+import { ShoppingCart, BookOpen, ClipboardList, AlertCircle, User } from "lucide-react";
 import Link from "next/link";
 
 export default async function DashboardPage() {
@@ -54,6 +54,7 @@ export default async function DashboardPage() {
     { count: missingCount },
     { data: upcomingTasks },
     { data: upcomingExams },
+    { data: members },
   ] = await Promise.all([
     supabase
       .from("shopping_list")
@@ -78,7 +79,16 @@ export default async function DashboardPage() {
       .gte("due_date", today)
       .order("due_date", { ascending: true })
       .limit(3),
+    supabase
+      .from("profiles")
+      .select("id, full_name")
+      .eq("family_id", familyId),
   ]);
+
+  function memberName(id: string | null) {
+    if (!id || !members) return null;
+    return members.find((m) => m.id === id)?.full_name ?? null;
+  }
 
   function formatDate(dateStr: string) {
     const date = new Date(dateStr);
@@ -177,9 +187,17 @@ export default async function DashboardPage() {
               >
                 <div>
                   <p className="font-medium text-sm">{exam.title}</p>
-                  {exam.due_date && (
-                    <p className="text-xs text-gray-500">{formatDate(exam.due_date)}</p>
-                  )}
+                  <div className="flex items-center gap-2 flex-wrap mt-0.5">
+                    {exam.due_date && (
+                      <p className="text-xs text-gray-500">{formatDate(exam.due_date)}</p>
+                    )}
+                    {memberName(exam.assigned_to) && (
+                      <span className="text-xs text-gray-400 flex items-center gap-0.5">
+                        <User className="h-3 w-3" />
+                        {memberName(exam.assigned_to)}
+                      </span>
+                    )}
+                  </div>
                 </div>
                 {exam.due_date && (
                   <Badge
@@ -217,9 +235,17 @@ export default async function DashboardPage() {
               >
                 <div>
                   <p className="font-medium text-sm">{task.title}</p>
-                  {task.due_date && (
-                    <p className="text-xs text-gray-500">{formatDate(task.due_date)}</p>
-                  )}
+                  <div className="flex items-center gap-2 flex-wrap mt-0.5">
+                    {task.due_date && (
+                      <p className="text-xs text-gray-500">{formatDate(task.due_date)}</p>
+                    )}
+                    {memberName(task.assigned_to) && (
+                      <span className="text-xs text-gray-400 flex items-center gap-0.5">
+                        <User className="h-3 w-3" />
+                        {memberName(task.assigned_to)}
+                      </span>
+                    )}
+                  </div>
                 </div>
                 <Badge
                   variant="outline"
