@@ -163,7 +163,7 @@ export default function SignupPage() {
 
             {mode === "create" ? (
               <div className="space-y-2">
-                <Label htmlFor="familyName">שם המשפחה (ללא המילה "משפחת")</Label>
+                <Label htmlFor="familyName">{`שם המשפחה (ללא המילה "משפחת")`}</Label>
                 <Input
                   id="familyName"
                   type="text"
