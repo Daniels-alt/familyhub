@@ -43,19 +43,14 @@ export default function SignupPage() {
 
     const userId = authData.user.id;
 
-    // 2. Update the full_name in profile (trigger creates the row)
-    await supabase
-      .from("profiles")
-      .update({ full_name: fullName })
-      .eq("id", userId);
-
-    // 3. Create or join family via RPC (bypasses RLS)
+    // 2. Create or join family via RPC — also sets full_name atomically (bypasses RLS)
     if (mode === "create") {
       const newFamilyId = crypto.randomUUID();
       const { error: rpcError } = await supabase.rpc("create_and_join_family", {
         p_family_id: newFamilyId,
         p_family_name: familyName.trim(),
         p_user_id: userId,
+        p_full_name: fullName,
       });
 
       if (rpcError) {
@@ -67,6 +62,7 @@ export default function SignupPage() {
       const { error: rpcError } = await supabase.rpc("join_family_by_code", {
         p_invite_code: inviteCode.trim(),
         p_user_id: userId,
+        p_full_name: fullName,
       });
 
       if (rpcError) {
