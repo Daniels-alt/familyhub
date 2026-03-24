@@ -11,6 +11,11 @@ const heebo = Heebo({
 export const metadata: Metadata = {
   title: "FamilyHub - ניהול משפחתי",
   description: "אפליקציה לניהול משפחה - קניות, משימות ועוד",
+  icons: {
+    icon: "/icon-192.png",
+    apple: "/icon-192.png",
+    shortcut: "/icon-192.png",
+  },
 };
 
 export default function RootLayout({
@@ -26,6 +31,8 @@ export default function RootLayout({
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="default" />
         <meta name="apple-mobile-web-app-title" content="FamilyHub" />
+        <link rel="manifest" href="/manifest.json" />
+        <link rel="icon" href="/icon-192.png" type="image/png" />
         <link rel="apple-touch-icon" href="/icon-192.png" />
       </head>
       <body className="font-heebo antialiased">
