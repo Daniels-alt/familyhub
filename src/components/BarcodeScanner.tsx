@@ -89,23 +89,19 @@ export default function BarcodeScanner({ onResult, onClose }: BarcodeScannerProp
       const { BrowserMultiFormatReader } = await import("@zxing/browser");
       const reader = new BrowserMultiFormatReader();
 
-      const interval = setInterval(async () => {
-        if (detectedRef.current || !videoRef.current) {
-          clearInterval(interval);
-          return;
-        }
-        try {
-          const result = await reader.decodeFromVideoElement(videoRef.current);
+      if (!videoRef.current) return;
+
+      reader.decodeFromVideoElement(
+        videoRef.current,
+        async (result, _err, controls) => {
           if (result && !detectedRef.current) {
             detectedRef.current = true;
-            clearInterval(interval);
+            controls.stop();
             stopCamera();
             await handleBarcode(result.getText());
           }
-        } catch {
-          /* no barcode in this frame — keep trying */
         }
-      }, 300);
+      );
     } catch {
       setScanState("error");
       setErrorMsg("שגיאה בטעינת סורק הברקוד.");
