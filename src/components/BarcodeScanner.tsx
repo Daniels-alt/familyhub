@@ -130,8 +130,8 @@ export default function BarcodeScanner({ onResult, onClose }: BarcodeScannerProp
   }
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/80 flex items-end sm:items-center justify-center">
-      <div className="bg-white w-full sm:max-w-md sm:rounded-xl overflow-hidden">
+    <div className="fixed inset-0 z-[100] bg-black/80 flex items-end sm:items-center justify-center">
+      <div className="bg-white w-full sm:max-w-md sm:rounded-xl overflow-hidden mb-16 sm:mb-0">
         {/* Header */}
         <div className="flex items-center justify-between px-4 py-3 border-b">
           <h3 className="font-semibold">סרוק ברקוד מוצר</h3>
@@ -184,6 +184,11 @@ export default function BarcodeScanner({ onResult, onClose }: BarcodeScannerProp
               <p className="text-center font-semibold text-lg leading-snug">
                 {productName}
               </p>
+              {/^[\x00-\x7F]+$/.test(productName) && (
+                <p className="text-center text-xs text-amber-500">
+                  שם המוצר אינו זמין בעברית
+                </p>
+              )}
               <div className="flex gap-2 pt-1">
                 <button
                   onClick={handleRescan}
