@@ -44,6 +44,30 @@ export interface Task {
 
 export type FamilyMember = Pick<Profile, "id" | "full_name" | "role">;
 
+export type MealType = "breakfast" | "lunch" | "dinner" | "snack";
+export type DietaryType = "dairy" | "meat" | "pareve";
+
+export interface Dish {
+  id: string;
+  family_id: string;
+  name: string;
+  meal_type: MealType;
+  dietary_type: DietaryType;
+  recipe: string | null;
+  added_by: string | null;
+  created_at: string;
+}
+
+export interface DailyVote {
+  id: string;
+  family_id: string;
+  dish_id: string;
+  user_id: string;
+  meal_type: MealType;
+  vote_date: string;
+  created_at: string;
+}
+
 export type Database = {
   public: {
     Tables: {

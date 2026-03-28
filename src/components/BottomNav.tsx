@@ -2,12 +2,13 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, ShoppingCart, CheckSquare, Settings } from "lucide-react";
+import { Home, ShoppingCart, CheckSquare, Settings, Utensils } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const navItems = [
   { href: "/dashboard", icon: Home, label: "ראשי" },
   { href: "/shopping", icon: ShoppingCart, label: "קניות" },
+  { href: "/nutrition", icon: Utensils, label: "תזונה" },
   { href: "/tasks", icon: CheckSquare, label: "משימות" },
   { href: "/settings", icon: Settings, label: "הגדרות" },
 ];
