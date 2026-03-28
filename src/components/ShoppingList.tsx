@@ -8,8 +8,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Plus, Trash2, ChevronDown, ChevronUp, Package } from "lucide-react";
+import { Plus, Trash2, ChevronDown, ChevronUp, Package, ScanBarcode } from "lucide-react";
 import { cn } from "@/lib/utils";
+import dynamic from "next/dynamic";
+
+const BarcodeScanner = dynamic(() => import("@/components/BarcodeScanner"), { ssr: false });
 
 const CATEGORIES = [
   "כללי",
@@ -40,6 +43,7 @@ export default function ShoppingList({
   const [newItemName, setNewItemName] = useState("");
   const [newItemCategory, setNewItemCategory] = useState("כללי");
   const [showBought, setShowBought] = useState(false);
+  const [showScanner, setShowScanner] = useState(false);
   const [isPending, startTransition] = useTransition();
   const supabase = createClient();
 
@@ -139,14 +143,25 @@ export default function ShoppingList({
           <form onSubmit={addItem} className="space-y-3">
             <div className="space-y-1">
               <Label htmlFor="itemName">שם הפריט</Label>
-              <Input
-                id="itemName"
-                type="text"
-                placeholder="לדוגמה: חלב 3%"
-                value={newItemName}
-                onChange={(e) => setNewItemName(e.target.value)}
-                required
-              />
+              <div className="flex gap-2">
+                <Input
+                  id="itemName"
+                  type="text"
+                  placeholder="לדוגמה: חלב 3%"
+                  value={newItemName}
+                  onChange={(e) => setNewItemName(e.target.value)}
+                  required
+                  className="flex-1"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowScanner(true)}
+                  className="flex items-center justify-center w-10 h-10 border rounded-md text-gray-500 hover:text-blue-600 hover:border-blue-400 transition-colors shrink-0"
+                  title="סרוק ברקוד"
+                >
+                  <ScanBarcode className="h-5 w-5" />
+                </button>
+              </div>
             </div>
             <div className="space-y-1">
               <Label htmlFor="category">קטגוריה</Label>
@@ -283,6 +298,15 @@ export default function ShoppingList({
             </CardContent>
           )}
         </Card>
+      )}
+      {showScanner && (
+        <BarcodeScanner
+          onResult={(name) => {
+            setNewItemName(name);
+            setShowScanner(false);
+          }}
+          onClose={() => setShowScanner(false)}
+        />
       )}
     </div>
   );
