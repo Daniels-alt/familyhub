@@ -15,6 +15,8 @@ import {
   X,
   BookOpen,
   ThumbsUp,
+  Pencil,
+  Check,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -67,6 +69,7 @@ export default function NutritionModule({
   const [activeTab, setActiveTab] = useState<"today" | "recipes">("today");
   const [showAddDish, setShowAddDish] = useState(false);
   const [selectedDish, setSelectedDish] = useState<Dish | null>(null);
+  const [isEditing, setIsEditing] = useState(false);
   const [filterMeal, setFilterMeal] = useState<MealType | "all">("all");
   const [filterDietary, setFilterDietary] = useState<DietaryType | "all">("all");
 
@@ -75,6 +78,12 @@ export default function NutritionModule({
   const [newMealType, setNewMealType] = useState<MealType>("breakfast");
   const [newDietaryType, setNewDietaryType] = useState<DietaryType>("pareve");
   const [newRecipe, setNewRecipe] = useState("");
+
+  // Edit dish form state
+  const [editName, setEditName] = useState("");
+  const [editMealType, setEditMealType] = useState<MealType>("breakfast");
+  const [editDietaryType, setEditDietaryType] = useState<DietaryType>("pareve");
+  const [editRecipe, setEditRecipe] = useState("");
 
   const [isPending, startTransition] = useTransition();
   const supabase = createClient();
@@ -208,6 +217,47 @@ export default function NutritionModule({
     });
   }
 
+  // ── Edit Dish ────────────────────────────────────────────────────────────────
+
+  function openEdit(dish: Dish) {
+    setEditName(dish.name);
+    setEditMealType(dish.meal_type);
+    setEditDietaryType(dish.dietary_type);
+    setEditRecipe(dish.recipe ?? "");
+    setIsEditing(true);
+  }
+
+  async function saveEdit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!selectedDish || !editName.trim()) return;
+
+    const updated: Dish = {
+      ...selectedDish,
+      name: editName.trim(),
+      meal_type: editMealType,
+      dietary_type: editDietaryType,
+      recipe: editRecipe.trim() || null,
+    };
+
+    setDishes((prev) =>
+      prev.map((d) => (d.id === updated.id ? updated : d)).sort((a, b) => a.name.localeCompare(b.name))
+    );
+    setSelectedDish(updated);
+    setIsEditing(false);
+
+    startTransition(async () => {
+      await supabase
+        .from("dishes")
+        .update({
+          name: updated.name,
+          meal_type: updated.meal_type,
+          dietary_type: updated.dietary_type,
+          recipe: updated.recipe,
+        })
+        .eq("id", updated.id);
+    });
+  }
+
   // ── Filtered dishes for recipes tab ─────────────────────────────────────────
 
   const filteredDishes = dishes.filter((d) => {
@@ -321,16 +371,17 @@ export default function NutritionModule({
                             onClick={() => toggleVote(dish)}
                             disabled={limitReached || isPending}
                             className={cn(
-                              "flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-medium transition-colors shrink-0",
+                              "group flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-medium transition-colors shrink-0",
                               voted
-                                ? "bg-blue-600 text-white hover:bg-blue-700"
+                                ? "bg-blue-600 text-white hover:bg-red-500"
                                 : limitReached
                                 ? "bg-gray-100 text-gray-300 cursor-not-allowed"
                                 : "bg-gray-100 text-gray-600 hover:bg-blue-50 hover:text-blue-600"
                             )}
                           >
                             <ThumbsUp className="h-3 w-3" />
-                            {voted ? "הצבעתי" : "הצבע"}
+                            <span className={voted ? "group-hover:hidden" : ""}>{voted ? "הצבעתי" : "הצבע"}</span>
+                            {voted && <span className="hidden group-hover:inline">בטל</span>}
                           </button>
                         </div>
                       );
@@ -548,45 +599,125 @@ export default function NutritionModule({
         </div>
       )}
 
-      {/* Recipe modal */}
+      {/* Recipe / Edit modal */}
       {selectedDish && (
         <div className="fixed inset-0 z-[100] bg-black/60 flex items-end sm:items-center justify-center">
-          <div className="bg-white w-full sm:max-w-md rounded-t-2xl sm:rounded-2xl max-h-[80vh] overflow-y-auto">
+          <div className="bg-white w-full sm:max-w-md rounded-t-2xl sm:rounded-2xl max-h-[85vh] overflow-y-auto">
             <div className="sticky top-0 bg-white px-5 pt-5 pb-3 border-b flex items-start justify-between gap-3">
-              <div>
-                <h3 className="font-bold text-lg leading-tight">{selectedDish.name}</h3>
-                <div className="flex items-center gap-2 mt-1 flex-wrap">
-                  <span className="text-sm text-gray-500">
-                    {MEAL_EMOJIS[selectedDish.meal_type]} {MEAL_LABELS[selectedDish.meal_type]}
-                  </span>
-                  <span
-                    className={cn(
-                      "text-xs px-2 py-0.5 rounded-full",
-                      DIETARY_COLORS[selectedDish.dietary_type]
-                    )}
-                  >
-                    {DIETARY_LABELS[selectedDish.dietary_type]}
-                  </span>
-                </div>
+              <div className="flex-1 min-w-0">
+                {isEditing ? (
+                  <p className="text-sm font-semibold text-blue-600">עריכת מנה</p>
+                ) : (
+                  <>
+                    <h3 className="font-bold text-lg leading-tight">{selectedDish.name}</h3>
+                    <div className="flex items-center gap-2 mt-1 flex-wrap">
+                      <span className="text-sm text-gray-500">
+                        {MEAL_EMOJIS[selectedDish.meal_type]} {MEAL_LABELS[selectedDish.meal_type]}
+                      </span>
+                      <span className={cn("text-xs px-2 py-0.5 rounded-full", DIETARY_COLORS[selectedDish.dietary_type])}>
+                        {DIETARY_LABELS[selectedDish.dietary_type]}
+                      </span>
+                    </div>
+                  </>
+                )}
               </div>
-              <button
-                onClick={() => setSelectedDish(null)}
-                className="text-gray-400 hover:text-gray-700 shrink-0 mt-1"
-              >
-                <X className="h-5 w-5" />
-              </button>
+              <div className="flex items-center gap-2 shrink-0 mt-1">
+                {!isEditing && (selectedDish.added_by === userId || userRole === "parent") && (
+                  <button
+                    onClick={() => openEdit(selectedDish)}
+                    className="text-gray-400 hover:text-blue-600 transition-colors"
+                    title="ערוך מנה"
+                  >
+                    <Pencil className="h-4 w-4" />
+                  </button>
+                )}
+                <button
+                  onClick={() => { setSelectedDish(null); setIsEditing(false); }}
+                  className="text-gray-400 hover:text-gray-700"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
             </div>
-            <div className="p-5">
-              {selectedDish.recipe ? (
-                <div className="whitespace-pre-wrap text-sm text-gray-700 leading-relaxed">
-                  {selectedDish.recipe}
+
+            {/* View mode */}
+            {!isEditing && (
+              <div className="p-5">
+                {selectedDish.recipe ? (
+                  <div className="whitespace-pre-wrap text-sm text-gray-700 leading-relaxed">
+                    {selectedDish.recipe}
+                  </div>
+                ) : (
+                  <p className="text-gray-400 text-sm text-center py-4">
+                    אין מתכון שמור למנה זו
+                  </p>
+                )}
+              </div>
+            )}
+
+            {/* Edit mode */}
+            {isEditing && (
+              <form onSubmit={saveEdit} className="p-5 space-y-3">
+                <div className="space-y-1">
+                  <Label>שם המנה</Label>
+                  <Input
+                    value={editName}
+                    onChange={(e) => setEditName(e.target.value)}
+                    required
+                    autoFocus
+                  />
                 </div>
-              ) : (
-                <p className="text-gray-400 text-sm text-center py-4">
-                  אין מתכון שמור למנה זו
-                </p>
-              )}
-            </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1">
+                    <Label>סוג ארוחה</Label>
+                    <select
+                      value={editMealType}
+                      onChange={(e) => setEditMealType(e.target.value as MealType)}
+                      className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                    >
+                      {MEAL_ORDER.map((m) => (
+                        <option key={m} value={m}>{MEAL_LABELS[m]}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="space-y-1">
+                    <Label>סוג</Label>
+                    <select
+                      value={editDietaryType}
+                      onChange={(e) => setEditDietaryType(e.target.value as DietaryType)}
+                      className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                    >
+                      <option value="pareve">פרווה</option>
+                      <option value="dairy">חלבי</option>
+                      <option value="meat">בשרי</option>
+                    </select>
+                  </div>
+                </div>
+                <div className="space-y-1">
+                  <Label>מתכון (אופציונלי)</Label>
+                  <textarea
+                    value={editRecipe}
+                    onChange={(e) => setEditRecipe(e.target.value)}
+                    placeholder="רשום כאן את הרכיבים והוראות ההכנה..."
+                    rows={5}
+                    className="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm resize-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  />
+                </div>
+                <div className="flex gap-2">
+                  <Button type="submit" className="flex-1" disabled={isPending}>
+                    <Check className="h-4 w-4 ml-1" />
+                    שמור שינויים
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setIsEditing(false)}
+                  >
+                    ביטול
+                  </Button>
+                </div>
+              </form>
+            )}
           </div>
         </div>
       )}
